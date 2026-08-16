@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#09090f">
+<title>Rukyail</title>
+
+<style>
+*{box-sizing:border-box}
+
+body{
+margin:0;
+background:#08080d;
+color:#eee;
+font-family:Arial,sans-serif
+}
+
+.app{
+max-width:600px;
+min-height:100vh;
+margin:auto;
+padding:20px;
+background:
+radial-gradient(circle at top,#302441,#111119 45%,#08080d)
+}
+
+.logo{
+text-align:center;
+padding:35px 10px
+}
+
+.logo h1{
+margin:0;
+font-size:36px;
+letter-spacing:8px
+}
+
+.logo p{
+color:#aaa
+}
+
+.card{
+background:#12121a;
+border:1px solid #393044;
+border-radius:20px;
+padding:20px;
+margin-bottom:18px
+}
+
+input,textarea{
+width:100%;
+padding:14px;
+margin:7px 0;
+border-radius:12px;
+border:1px solid #40364d;
+background:#09090e;
+color:white;
+outline:none
+}
+
+button{
+width:100%;
+padding:14px;
+margin-top:8px;
+border:0;
+border-radius:12px;
+background:#694b88;
+color:white;
+font-weight:bold
+}
+
+button:active{
+transform:scale(.98)
+}
+
+.hidden{
+display:none!important
+}
+
+.notice{
+background:#1d1825;
+border-left:4px solid #a679c7;
+padding:14px;
+border-radius:10px;
+margin-bottom:15px
+}
+
+.messages{
+height:400px;
+overflow-y:auto;
+padding:5px
+}
+
+.message{
+background:#1a1921;
+padding:11px;
+border-radius:13px;
+margin:8px 0
+}
+
+.message .name{
+font-size:12px;
+color:#b58bd4;
+font-weight:bold
+}
+
+.message .text{
+margin-top:5px
+}
+
+.small{
+font-size:12px;
+color:#777;
+text-align:center
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<div class="logo">
+<h1>RUKYAIL</h1>
+<p>Özel topluluğun sessiz odası</p>
+</div>
+
+<div id="login" class="card">
+
+<h2>Üyelik</h2>
+
+<p>
+Sohbet odasına katılmak için kayıt ol.
+</p>
+
+<input
+id="name"
+type="text"
+placeholder="İsim"
+autocomplete="given-name">
+
+<input
+id="surname"
+type="text"
+placeholder="Soyisim"
+autocomplete="family-name">
+
+<button onclick="register()">
+KAYIT OL
+</button>
+
+<p id="error"></p>
+
+</div>
+
+
+<div id="member" class="hidden">
+
+<div class="card">
+
+<h2>🌑 RUKYAIL ODASI</h2>
+
+<div id="announcement"></div>
+
+<div
+id="messages"
+class="messages">
+</div>
+
+<input
+id="message"
+type="text"
+placeholder="Bir şeyler yaz..."
+onkeydown="if(event.key==='Enter')send()">
+
+<button onclick="send()">
+GÖNDER
+</button>
+
+</div>
+
+
+<div class="card">
+
+<h3>📢 Son Dakika</h3>
+
+<textarea
+id="news"
+rows="4"
+placeholder="Duyurunu yaz...">
+</textarea>
+
+<button onclick="publish()">
+YAYINLA
+</button>
+
+</div>
+
+
+<div class="card">
+
+<button onclick="logout()">
+ÇIKIŞ YAP
+</button>
+
+</div>
+
+</div>
+
+<div class="small">
+Rukyail © 2026
+</div>
+
+</div>
+
+
+<script>
+
+const USER_KEY="rukyail_user";
+const MSG_KEY="rukyail_messages";
+const NEWS_KEY="rukyail_news";
+
+let user=
+JSON.parse(
+localStorage.getItem(USER_KEY)||"null"
+);
+
+let messages=
+JSON.parse(
+localStorage.getItem(MSG_KEY)||"[]"
+);
+
+let news=
+localStorage.getItem(NEWS_KEY)||"";
+
+
+function register(){
+
+const name=
+document
+.getElementById("name")
+.value
+.trim();
+
+const surname=
+document
+.getElementById("surname")
+.value
+.trim();
+
+if(!name||!surname){
+
+document
+.getElementById("error")
+.textContent=
+"İsim ve soyisim zorunludur.";
+
+return;
+}
+
+user={
+name:name,
+surname:surname
+};
+
+localStorage.setItem(
+USER_KEY,
+JSON.stringify(user)
+);
+
+openRoom();
+}
+
+
+function openRoom(){
+
+document
+.getElementById("login")
+.classList
+.add("hidden");
+
+document
+.getElementById("member")
+.classList
+.remove("hidden");
+
+renderMessages();
+renderNews();
+}
+
+
+function send(){
+
+if(!user)return;
+
+const input=
+document.getElementById("message");
+
+const text=
+input.value.trim();
+
+if(!text)return;
+
+messages.push({
+
+name:
+user.name+
+" "+
+user.surname,
+
+text:text,
+
+time:
+new Date().toLocaleTimeString(
+"tr-TR",
+{
+hour:"2-digit",
+minute:"2-digit"
+}
+)
+
+});
+
+localStorage.setItem(
+MSG_KEY,
+JSON.stringify(messages)
+);
+
+input.value="";
+
+renderMessages();
+}
+
+
+function renderMessages(){
+
+const box=
+document.getElementById("messages");
+
+box.innerHTML="";
+
+messages.forEach(function(item){
+
+const div=
+document.createElement("div");
+
+div.className="message";
+
+div.innerHTML=
+'<div class="name">'+
+escapeHTML(item.name)+
+'</div>'+
+'<div class="text">'+
+escapeHTML(item.text)+
+'</div>';
+
+box.appendChild(div);
+
+});
+
+box.scrollTop=
+box.scrollHeight;
+}
+
+
+function publish(){
+
+if(!user)return;
+
+const text=
+document
+.getElementById("news")
+.value
+.trim();
+
+if(!text)return;
+
+news=text;
+
+localStorage.setItem(
+NEWS_KEY,
+news
+);
+
+document
+.getElementById("news")
+.value="";
+
+renderNews();
+}
+
+
+function renderNews(){
+
+const box=
+document.getElementById(
+"announcement"
+);
+
+if(!news){
+
+box.innerHTML="";
+
+return;
+}
+
+box.innerHTML=
+'<div class="notice">'+
+'<b>⚡ SON DAKİKA</b>'+
+'<br><br>'+
+escapeHTML(news)+
+'</div>';
+}
+
+
+function logout(){
+
+user=null;
+
+localStorage.removeItem(
+USER_KEY
+);
+
+document
+.getElementById("member")
+.classList
+.add("hidden");
+
+document
+.getElementById("login")
+.classList
+.remove("hidden");
+}
+
+
+function escapeHTML(text){
+
+return String(text)
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;")
+.replace(/"/g,"&quot;")
+.replace(/'/g,"&#039;");
+}
+
+
+if(user){
+openRoom();
+}
+
+</script>
+
+</body>
+</html>
